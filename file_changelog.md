@@ -95,7 +95,6 @@ This file tracks all created and modified files across implementation steps, det
 - `README.md` (1-160) - Updated root documentation with Mermaid ERD, architecture overview, design decisions, setup instructions, and deployment links.
 - `file_changelog.md` (1-110) - Final step changelog recording created and edited files by step with exact line ranges.
 
-## Follow-up Fixes:
-- `frontend/src/components/ui/Toast.tsx` (1-42) - Auto-dismiss timer fix.
-- `frontend/src/hooks/useCamera.ts` (1-115) - `toggleVideo` stops video tracks (`track.stop()`) on "Stop Video" to release camera hardware light, and re-acquires a video track via `getUserMedia` on "Start Video".
-- `frontend/src/components/meeting/VideoTile.tsx` (1-65) - Keeps `<video>` DOM element mounted so `videoRef` remains attached seamlessly across video start/stop toggles.
+## Follow-up Toast Animation Enhancement:
+- `frontend/src/app/globals.css` (40-75) - Added `toastEnter` (slide down + scale in) and `toastExit` (slide up + fade out) keyframes.
+- `frontend/src/components/ui/Toast.tsx` (1-52) - Added `isExiting` state and 200ms cubic-bezier transition handling for smooth popping up and vanishing.

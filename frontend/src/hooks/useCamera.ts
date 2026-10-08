@@ -66,17 +66,34 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
     }
   }, [stream]);
 
-  const toggleMute = useCallback(() => {
-    if (streamRef.current) {
-      const nextMuted = !isMuted;
+  // Toggle Mute: when muting, stop audio tracks to release microphone hardware access completely.
+  // When unmuting, re-acquire audio track via getUserMedia and attach to stream.
+  const toggleMute = useCallback(async () => {
+    if (!streamRef.current) return;
+
+    if (!isMuted) {
+      // Muting: stop audio tracks so microphone hardware turns off
       streamRef.current.getAudioTracks().forEach((track) => {
-        track.enabled = !nextMuted;
+        track.stop();
+        streamRef.current?.removeTrack(track);
       });
-      setIsMuted(nextMuted);
+      setIsMuted(true);
+    } else {
+      // Unmuting: re-acquire audio track and attach to stream
+      try {
+        const newAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const newAudioTrack = newAudioStream.getAudioTracks()[0];
+        if (newAudioTrack && streamRef.current) {
+          streamRef.current.addTrack(newAudioTrack);
+        }
+        setIsMuted(false);
+      } catch (err) {
+        console.warn("Failed to restart microphone stream:", err);
+      }
     }
   }, [isMuted]);
 
-  // Toggle Video: when stopping video, stop hardware tracks so camera light turns OFF.
+  // Toggle Video: when stopping video, stop hardware video tracks so camera light turns OFF.
   // When starting video, acquire new video track and re-attach to stream and video element.
   const toggleVideo = useCallback(async () => {
     if (!streamRef.current) return;

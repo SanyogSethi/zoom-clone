@@ -2,20 +2,40 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
-export function useCamera() {
+export interface UseCameraOptions {
+  enabled?: boolean;
+}
+
+export function useCamera(options: UseCameraOptions = { enabled: true }) {
+  const { enabled = true } = options;
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isVideoOff, setIsVideoOff] = useState<boolean>(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  // Initialize camera and microphone media stream
+  // Stop all camera and microphone tracks immediately
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        track.stop();
+      });
+      streamRef.current = null;
+    }
+    setStream(null);
+    setHasPermission(null);
+  }, []);
+
+  // Request camera and microphone access only when enabled is true
   const initCamera = useCallback(async () => {
+    if (!enabled) return;
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: true,
       });
+      streamRef.current = mediaStream;
       setStream(mediaStream);
       setHasPermission(true);
       if (videoRef.current) {
@@ -25,41 +45,47 @@ export function useCamera() {
       console.warn("Camera/Microphone access denied or unavailable:", err);
       setHasPermission(false);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
-    initCamera();
+    if (enabled) {
+      initCamera();
+    }
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+      // Cleanup using streamRef ensures tracks stop even if state closure is stale
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
       }
     };
-  }, []);
+  }, [enabled, initCamera]);
 
-  // Ensure video element receives stream when ref changes
+  // Attach stream to video ref whenever stream or ref changes
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
     }
-  }, [stream, videoRef.current]);
+  }, [stream]);
 
   const toggleMute = useCallback(() => {
-    if (stream) {
-      stream.getAudioTracks().forEach((track) => {
-        track.enabled = isMuted; // Toggle track enabled state
+    if (streamRef.current) {
+      const nextMuted = !isMuted;
+      streamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = !nextMuted;
       });
+      setIsMuted(nextMuted);
     }
-    setIsMuted((prev) => !prev);
-  }, [stream, isMuted]);
+  }, [isMuted]);
 
   const toggleVideo = useCallback(() => {
-    if (stream) {
-      stream.getVideoTracks().forEach((track) => {
-        track.enabled = isVideoOff; // Toggle track enabled state
+    if (streamRef.current) {
+      const nextVideoOff = !isVideoOff;
+      streamRef.current.getVideoTracks().forEach((track) => {
+        track.enabled = !nextVideoOff;
       });
+      setIsVideoOff(nextVideoOff);
     }
-    setIsVideoOff((prev) => !prev);
-  }, [stream, isVideoOff]);
+  }, [isVideoOff]);
 
   return {
     stream,
@@ -69,5 +95,6 @@ export function useCamera() {
     hasPermission,
     toggleMute,
     toggleVideo,
+    stopCamera,
   };
 }

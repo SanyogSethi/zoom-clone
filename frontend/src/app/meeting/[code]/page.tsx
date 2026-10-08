@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Info, ShieldCheck, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
@@ -24,12 +24,16 @@ export default function MeetingRoomPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [secondsElapsed, setSecondsElapsed] = useState<number>(0);
 
-  const { videoRef, isMuted, isVideoOff, toggleMute, toggleVideo } = useCamera();
+  // Request camera access ONLY when inside active meeting room session
+  const { videoRef, isMuted, isVideoOff, toggleMute, toggleVideo, stopCamera } = useCamera({
+    enabled: !loading,
+  });
+
   const { participants, activeParticipants, refreshParticipants } = useParticipants(
     sessionInfo?.session_id ?? null
   );
 
-  // Initialize room session and join if needed
+  // Initialize room session
   useEffect(() => {
     if (!meetingCode) return;
 
@@ -79,27 +83,29 @@ export default function MeetingRoomPage() {
   };
 
   const handleLeave = async () => {
-    if (!sessionInfo) return;
-    try {
-      await api.leaveSession(sessionInfo.session_id, sessionInfo.participant_id);
-    } catch (err) {
-      console.warn("Leave session error:", err);
-    } finally {
-      sessionStorage.removeItem(`session_${meetingCode}`);
-      router.push("/");
+    stopCamera(); // Instantly release camera & microphone tracks
+    if (sessionInfo) {
+      try {
+        await api.leaveSession(sessionInfo.session_id, sessionInfo.participant_id);
+      } catch (err) {
+        console.warn("Leave session error:", err);
+      }
     }
+    sessionStorage.removeItem(`session_${meetingCode}`);
+    router.push("/");
   };
 
   const handleEndAll = async () => {
-    if (!sessionInfo) return;
-    try {
-      await api.endSession(sessionInfo.session_id);
-    } catch (err) {
-      console.warn("End session error:", err);
-    } finally {
-      sessionStorage.removeItem(`session_${meetingCode}`);
-      router.push("/");
+    stopCamera(); // Instantly release camera & microphone tracks
+    if (sessionInfo) {
+      try {
+        await api.endSession(sessionInfo.session_id);
+      } catch (err) {
+        console.warn("End session error:", err);
+      }
     }
+    sessionStorage.removeItem(`session_${meetingCode}`);
+    router.push("/");
   };
 
   // Host Controls
@@ -134,6 +140,10 @@ export default function MeetingRoomPage() {
     }
   };
 
+  const handleCloseToast = useCallback(() => {
+    setToastMsg(null);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex-1 bg-[#1C1C1C] flex flex-col items-center justify-center text-white gap-4">
@@ -145,10 +155,6 @@ export default function MeetingRoomPage() {
 
   const isHost = sessionInfo?.role === "host";
   const selfDisplayName = "Sanyog Sethi";
-
-  const handleCloseToast = useCallback(() => {
-    setToastMsg(null);
-  }, []);
 
   return (
     <div className="flex-1 flex flex-col bg-[#1C1C1C] text-white overflow-hidden select-none min-h-0">

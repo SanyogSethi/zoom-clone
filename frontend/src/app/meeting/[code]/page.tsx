@@ -36,11 +36,9 @@ export default function MeetingRoomPage() {
     const initRoom = async () => {
       setLoading(true);
       try {
-        // 1. Verify meeting metadata
         const m = await api.getMeetingByCode(meetingCode);
         setMeeting(m);
 
-        // 2. Check session storage for join state or join session automatically
         const stored = sessionStorage.getItem(`session_${meetingCode}`);
         if (stored) {
           setSessionInfo(JSON.parse(stored));
@@ -104,7 +102,7 @@ export default function MeetingRoomPage() {
     }
   };
 
-  // Host Controls (Bonus)
+  // Host Controls
   const handleMuteAll = async () => {
     if (!sessionInfo) return;
     try {
@@ -149,10 +147,9 @@ export default function MeetingRoomPage() {
   const selfDisplayName = "Sanyog Sethi";
 
   return (
-    <div className="flex-1 flex flex-col bg-[#1C1C1C] text-white overflow-hidden select-none">
-      {/* Top Meeting Room Overlay Bar */}
-      <div className="h-12 bg-[#1C1C1C] px-4 flex items-center justify-between border-b border-neutral-800 z-20 text-xs">
-        {/* Left: Meeting Title & Timer */}
+    <div className="flex-1 flex flex-col bg-[#1C1C1C] text-white overflow-hidden select-none min-h-0">
+      {/* Top Meeting Info Bar */}
+      <div className="h-10 px-4 flex items-center justify-between border-b border-neutral-800 shrink-0 text-xs bg-[#1C1C1C] z-20">
         <div className="flex items-center gap-3">
           <button title="Meeting info" className="text-gray-400 hover:text-white">
             <Info className="w-4 h-4" />
@@ -166,7 +163,6 @@ export default function MeetingRoomPage() {
           </span>
         </div>
 
-        {/* Right: Encryption Indicator */}
         <div className="flex items-center gap-2 text-zoom-live text-[11px] font-medium">
           <ShieldCheck className="w-4 h-4" />
           <span>Enhanced Encryption</span>
@@ -174,8 +170,8 @@ export default function MeetingRoomPage() {
       </div>
 
       {/* Main Room Body: Video Grid + Slide-over Participants Drawer */}
-      <div className="flex-1 flex overflow-hidden relative">
-        <div className="flex-1 h-full overflow-hidden">
+      <div className="flex-1 min-h-0 flex overflow-hidden relative">
+        <div className="flex-1 h-full min-h-0 overflow-hidden flex items-center justify-center">
           <VideoGrid
             selfParticipant={{
               display_name: selfDisplayName,

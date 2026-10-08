@@ -82,3 +82,11 @@ This file tracks all created and modified files across implementation steps, det
 - `frontend/src/components/meeting/ControlBar.tsx` (1-105)
 - `frontend/src/components/meeting/ParticipantsPanel.tsx` (1-125)
 - `frontend/src/app/meeting/[code]/page.tsx` (1-205)
+
+## Step 7: Layout Height Constraints, Fixed Navbar & Host Controls Refinement
+- `frontend/src/components/layout/Navbar.tsx` (1-68) - Sticky fixed navbar positioning & vertical alignment
+- `frontend/src/app/layout.tsx` (1-22) - Viewport h-full overflow-hidden container bounds
+- `frontend/src/components/meeting/VideoTile.tsx` (1-60) - Bound tile & video element height within container without overflow
+- `frontend/src/components/meeting/VideoGrid.tsx` (1-65) - Aspect ratio constrained single & grid video scaling
+- `frontend/src/app/meeting/[code]/page.tsx` (1-210) - Strict viewport height allocation for meeting bar, video, and controls
+- `frontend/src/components/layout/Sidebar.tsx` (1-35) - Mobile responsive navigation hiding

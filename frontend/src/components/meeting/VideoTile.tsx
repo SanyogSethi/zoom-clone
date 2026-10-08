@@ -26,8 +26,10 @@ export const VideoTile: React.FC<VideoTileProps> = ({
 
   return (
     <div
-      className={`relative w-full h-full bg-[#2D2D2D] rounded-xl overflow-hidden flex items-center justify-center border-2 transition-all duration-150 ${
-        isActiveSpeaker ? "border-zoom-live shadow-[0_0_15px_rgba(46,182,125,0.4)]" : "border-neutral-800"
+      className={`relative w-full h-full max-h-full bg-[#2D2D2D] rounded-xl overflow-hidden flex items-center justify-center border-2 transition-all duration-150 min-h-0 ${
+        isActiveSpeaker
+          ? "border-zoom-live shadow-[0_0_15px_rgba(46,182,125,0.4)]"
+          : "border-neutral-800"
       }`}
     >
       {/* Real Camera Stream for Self */}
@@ -37,17 +39,17 @@ export const VideoTile: React.FC<VideoTileProps> = ({
           autoPlay
           playsInline
           muted
-          className="w-full h-full object-cover transform -scale-x-100"
+          className="w-full h-full object-cover transform -scale-x-100 max-h-full"
         />
       ) : (
         /* Initials Avatar fallback for video off or remote participants */
-        <div className="flex flex-col items-center justify-center gap-3 select-none">
+        <div className="flex flex-col items-center justify-center gap-3 select-none p-4">
           <Avatar name={participant.display_name} size="xl" />
         </div>
       )}
 
       {/* Bottom Left: Name Label Tag */}
-      <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md flex items-center gap-2 text-white text-xs font-medium select-none z-10">
+      <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-md px-3 py-1 rounded-md flex items-center gap-2 text-white text-xs font-medium select-none z-10">
         {isMuted && <MicOff className="w-3.5 h-3.5 text-zoom-danger" />}
         <span>
           {participant.display_name}

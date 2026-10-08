@@ -146,6 +146,10 @@ export default function MeetingRoomPage() {
   const isHost = sessionInfo?.role === "host";
   const selfDisplayName = "Sanyog Sethi";
 
+  const handleCloseToast = useCallback(() => {
+    setToastMsg(null);
+  }, []);
+
   return (
     <div className="flex-1 flex flex-col bg-[#1C1C1C] text-white overflow-hidden select-none min-h-0">
       {/* Top Meeting Info Bar */}
@@ -212,7 +216,7 @@ export default function MeetingRoomPage() {
 
       {/* Toast Messages */}
       {toastMsg && (
-        <Toast message={toastMsg} onClose={() => setToastMsg(null)} />
+        <Toast message={toastMsg} onClose={handleCloseToast} />
       )}
     </div>
   );

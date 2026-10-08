@@ -94,3 +94,7 @@ This file tracks all created and modified files across implementation steps, det
 ## Step 8: Comprehensive README Documentation, ERD & Final Cleanup
 - `README.md` (1-160) - Updated root documentation with Mermaid ERD, architecture overview, design decisions, setup instructions, and deployment links.
 - `file_changelog.md` (1-110) - Final step changelog recording created and edited files by step with exact line ranges.
+
+## Follow-up Toast Auto-Dismiss Fix:
+- `frontend/src/components/ui/Toast.tsx` (1-42) - Used `useRef` for `onClose` callback so timer fires strictly after 3000ms regardless of parent re-renders.
+- `frontend/src/app/meeting/[code]/page.tsx` (211-217) - Memoized `handleCloseToast` callback.

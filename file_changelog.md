@@ -95,5 +95,5 @@ This file tracks all created and modified files across implementation steps, det
 - `README.md` (1-160) - Updated root documentation with Mermaid ERD, architecture overview, design decisions, setup instructions, and deployment links.
 - `file_changelog.md` (1-110) - Final step changelog recording created and edited files by step with exact line ranges.
 
-## Follow-up Polish: Official Zoom Homepage Matching
-- `frontend/src/app/page.tsx` (1-320) - Redesigned homepage matching official Zoom Workplace UI with 28px squircle action tiles ("New meeting ∨", "Join", "Schedule (19)", "Share screen (↑)"), slate blue clock gradient box with plant vector graphic, cream calendar connection prompt, subheader date filter bar, beach umbrella empty illustration state, and "Open Recordings >" card footer.
+## Follow-up Polish & Alignment Fixes:
+- `frontend/src/app/page.tsx` (1-330) - Anchored the 4 action tiles on the left (`shrink-0`) and bounded the Zoom home widget card on the right (`max-h-[calc(100vh-110px)] flex flex-col`) with internal scrolling for meetings list (`overflow-y-auto flex-1`), preventing horizontal clipping or tiles overflow.

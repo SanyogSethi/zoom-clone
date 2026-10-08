@@ -90,11 +90,11 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex-1 bg-[#141416] text-white overflow-y-auto flex items-center justify-center p-6 md:p-12 select-none">
-      <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-12 lg:gap-16 items-start justify-center">
-        {/* Left Side: 4 Action Tiles */}
-        <div className="w-full lg:w-auto flex flex-col items-center lg:items-start gap-8 pt-4">
-          <div className="grid grid-cols-2 gap-8 sm:gap-10">
+    <div className="flex-1 bg-[#141416] text-white overflow-hidden flex items-center justify-center p-6 md:p-10 select-none">
+      <div className="w-full max-w-5xl h-full flex flex-col md:flex-row items-start justify-between gap-8 md:gap-12 min-h-0">
+        {/* Left Side: 4 Action Tiles (Always anchored and visible) */}
+        <div className="flex flex-col items-center md:items-start gap-6 pt-4 shrink-0 mx-auto md:mx-0">
+          <div className="grid grid-cols-2 gap-6 sm:gap-8">
             {/* 1. New Meeting (Orange Squircle) */}
             <div className="flex flex-col items-center gap-2 group">
               <button
@@ -109,7 +109,7 @@ export default function Dashboard() {
                   <Video className="w-12 h-12 stroke-[2.2]" />
                 )}
               </button>
-              <div className="flex items-center gap-1 text-sm font-medium text-gray-300 group-hover:text-white transition-colors cursor-pointer">
+              <div className="flex items-center gap-1 text-xs font-semibold text-gray-300 group-hover:text-white transition-colors cursor-pointer">
                 <span>New meeting</span>
                 <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
               </div>
@@ -124,7 +124,7 @@ export default function Dashboard() {
               >
                 <Plus className="w-12 h-12 stroke-[2.8]" />
               </button>
-              <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors cursor-pointer">
+              <span className="text-xs font-semibold text-gray-300 group-hover:text-white transition-colors cursor-pointer">
                 Join
               </span>
             </div>
@@ -141,7 +141,7 @@ export default function Dashboard() {
                   <span className="absolute top-[48%] text-[11px] font-bold text-white">19</span>
                 </div>
               </button>
-              <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors cursor-pointer">
+              <span className="text-xs font-semibold text-gray-300 group-hover:text-white transition-colors cursor-pointer">
                 Schedule
               </span>
             </div>
@@ -154,20 +154,20 @@ export default function Dashboard() {
               >
                 <ArrowUp className="w-12 h-12 stroke-[2.5]" />
               </button>
-              <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors cursor-pointer">
+              <span className="text-xs font-semibold text-gray-300 group-hover:text-white transition-colors cursor-pointer">
                 Share screen
               </span>
             </div>
           </div>
         </div>
 
-        {/* Right Side: Official Zoom Home Widget Card */}
-        <div className="w-full lg:w-[420px] bg-[#18181A] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+        {/* Right Side: Official Zoom Home Widget Card (Internally Bounded & Scrollable) */}
+        <div className="w-full md:w-[420px] max-h-[calc(100vh-110px)] bg-[#18181A] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col shrink-0 mx-auto md:mx-0">
           {/* 1. Top Clock Banner Header */}
-          <div className="relative bg-gradient-to-r from-[#243545] via-[#2A3F53] to-[#1E2B38] px-6 py-6 flex items-center justify-between border-b border-neutral-800">
+          <div className="relative bg-gradient-to-r from-[#243545] via-[#2A3F53] to-[#1E2B38] px-6 py-5 flex items-center justify-between border-b border-neutral-800 shrink-0">
             {/* Potted Plant Graphic Vector */}
             <div className="flex items-center gap-4">
-              <svg className="w-12 h-14" viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg className="w-10 h-12" viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M16 40C16 40 10 28 8 20C6 12 14 6 22 14C30 22 24 32 16 40Z" fill="#2EB67D" />
                 <path d="M24 40C24 40 32 26 36 18C40 10 32 4 24 12C16 20 20 30 24 40Z" fill="#10B981" />
                 <path d="M20 40C20 40 16 20 20 10C24 0 28 10 24 24C20 38 20 40 20 40Z" fill="#059669" />
@@ -175,10 +175,10 @@ export default function Dashboard() {
               </svg>
 
               <div className="flex flex-col">
-                <span className="text-4xl font-black text-white tracking-tight leading-none">
+                <span className="text-3xl font-black text-white tracking-tight leading-none">
                   {timeStr || "10:23 PM"}
                 </span>
-                <span className="text-sm font-medium text-gray-200 mt-1.5">
+                <span className="text-xs font-medium text-gray-200 mt-1.5">
                   {dateStr || "Thursday, October 8"}
                 </span>
               </div>
@@ -196,7 +196,7 @@ export default function Dashboard() {
           </div>
 
           {/* 2. Calendar Banner Prompt */}
-          <div className="bg-[#FFF9EE] border-b border-[#E6DEC8] px-5 py-3 text-xs text-[#232333] font-medium leading-relaxed">
+          <div className="bg-[#FFF9EE] border-b border-[#E6DEC8] px-5 py-2.5 text-xs text-[#232333] font-medium leading-relaxed shrink-0">
             Respond to events, see other's availability and more by{" "}
             <button
               onClick={() => setIsScheduleOpen(true)}
@@ -207,7 +207,7 @@ export default function Dashboard() {
           </div>
 
           {/* 3. Filter Controls Subheader */}
-          <div className="bg-[#18181A] px-4 py-2.5 border-b border-neutral-800 flex items-center justify-between text-xs text-gray-300 font-medium">
+          <div className="bg-[#18181A] px-4 py-2 border-b border-neutral-800 flex items-center justify-between text-xs text-gray-300 font-medium shrink-0">
             <button className="flex items-center gap-1 hover:text-white transition-colors">
               <span className="font-bold text-white">Today</span>
               <ChevronDown className="w-3.5 h-3.5" />
@@ -227,10 +227,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* 4. Meetings Content Section */}
-          <div className="flex-1 bg-[#141416] p-5 flex flex-col gap-5 min-h-[260px]">
+          {/* 4. Meetings Content Section (Internally Scrollable) */}
+          <div className="flex-1 overflow-y-auto bg-[#141416] p-4 flex flex-col gap-4 min-h-0">
             {loading ? (
-              <div className="py-12 flex flex-col items-center justify-center gap-3 text-gray-400 text-xs">
+              <div className="py-10 flex flex-col items-center justify-center gap-3 text-gray-400 text-xs">
                 <Loader2 className="w-6 h-6 animate-spin text-zoom-blue" />
                 <span>Syncing schedule...</span>
               </div>
@@ -337,7 +337,7 @@ export default function Dashboard() {
           </div>
 
           {/* 5. Card Footer */}
-          <div className="bg-[#18181A] px-5 py-3 border-t border-neutral-800 flex items-center justify-between text-xs text-gray-400 font-medium hover:text-white cursor-pointer transition-colors">
+          <div className="bg-[#18181A] px-5 py-2.5 border-t border-neutral-800 flex items-center justify-between text-xs text-gray-400 font-medium hover:text-white cursor-pointer transition-colors shrink-0">
             <span>Open Recordings</span>
             <ChevronRightIcon className="w-4 h-4" />
           </div>

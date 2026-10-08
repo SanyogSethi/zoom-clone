@@ -52,7 +52,6 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
       initCamera();
     }
     return () => {
-      // Cleanup using streamRef ensures tracks stop even if state closure is stale
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
@@ -60,7 +59,7 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
     };
   }, [enabled, initCamera]);
 
-  // Attach stream to video ref whenever stream or ref changes
+  // Ensure video element receives stream when stream updates
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
@@ -77,13 +76,35 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
     }
   }, [isMuted]);
 
-  const toggleVideo = useCallback(() => {
-    if (streamRef.current) {
-      const nextVideoOff = !isVideoOff;
+  // Toggle Video: when stopping video, stop hardware tracks so camera light turns OFF.
+  // When starting video, acquire new video track and re-attach to stream and video element.
+  const toggleVideo = useCallback(async () => {
+    if (!streamRef.current) return;
+
+    if (!isVideoOff) {
+      // Stopping video: stop video tracks to turn off hardware camera light
       streamRef.current.getVideoTracks().forEach((track) => {
-        track.enabled = !nextVideoOff;
+        track.stop();
+        streamRef.current?.removeTrack(track);
       });
-      setIsVideoOff(nextVideoOff);
+      setIsVideoOff(true);
+    } else {
+      // Starting video: re-acquire video track and attach to stream
+      try {
+        const newVideoStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+        const newVideoTrack = newVideoStream.getVideoTracks()[0];
+        if (newVideoTrack && streamRef.current) {
+          streamRef.current.addTrack(newVideoTrack);
+          if (videoRef.current) {
+            videoRef.current.srcObject = streamRef.current;
+          }
+        }
+        setIsVideoOff(false);
+      } catch (err) {
+        console.warn("Failed to restart camera stream:", err);
+      }
     }
   }, [isVideoOff]);
 

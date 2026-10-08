@@ -22,7 +22,7 @@ export const VideoTile: React.FC<VideoTileProps> = ({
   isMuted = false,
   isActiveSpeaker = false,
 }) => {
-  const showVideo = isSelf && !isVideoOff && videoRef;
+  const isCameraActive = isSelf && !isVideoOff && videoRef;
 
   return (
     <div
@@ -32,17 +32,21 @@ export const VideoTile: React.FC<VideoTileProps> = ({
           : "border-neutral-800"
       }`}
     >
-      {/* Real Camera Stream for Self */}
-      {showVideo ? (
+      {/* Real Camera Stream for Self (DOM node stays mounted so videoRef stays attached) */}
+      {isSelf && videoRef && (
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className="w-full h-full object-cover transform -scale-x-100 max-h-full"
+          className={`w-full h-full object-cover transform -scale-x-100 max-h-full ${
+            isCameraActive ? "block" : "hidden"
+          }`}
         />
-      ) : (
-        /* Initials Avatar fallback for video off or remote participants */
+      )}
+
+      {/* Initials Avatar fallback when video is off or for remote participants */}
+      {(!isSelf || isVideoOff || !videoRef) && (
         <div className="flex flex-col items-center justify-center gap-3 select-none p-4">
           <Avatar name={participant.display_name} size="xl" />
         </div>

@@ -90,3 +90,7 @@ This file tracks all created and modified files across implementation steps, det
 - `frontend/src/components/meeting/VideoGrid.tsx` (1-65) - Aspect ratio constrained single & grid video scaling
 - `frontend/src/app/meeting/[code]/page.tsx` (1-210) - Strict viewport height allocation for meeting bar, video, and controls
 - `frontend/src/components/layout/Sidebar.tsx` (1-35) - Mobile responsive navigation hiding
+
+## Step 8: Comprehensive README Documentation, ERD & Final Cleanup
+- `README.md` (1-160) - Updated root documentation with Mermaid ERD, architecture overview, design decisions, setup instructions, and deployment links.
+- `file_changelog.md` (1-110) - Final step changelog recording created and edited files by step with exact line ranges.

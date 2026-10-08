@@ -72,3 +72,13 @@ This file tracks all created and modified files across implementation steps, det
 - `frontend/src/components/dashboard/ScheduleModal.tsx` (1-180)
 - `frontend/src/app/j/[code]/page.tsx` (1-35)
 - `frontend/src/app/page.tsx` (1-240)
+
+## Step 6: Meeting Room UI, Camera & Control Bar
+- `frontend/src/hooks/useCamera.ts` (1-65)
+- `frontend/src/hooks/useParticipants.ts` (1-35)
+- `frontend/src/components/meeting/VideoTile.tsx` (1-55)
+- `frontend/src/components/meeting/VideoGrid.tsx` (1-60)
+- `frontend/src/components/meeting/LeaveMenu.tsx` (1-55)
+- `frontend/src/components/meeting/ControlBar.tsx` (1-105)
+- `frontend/src/components/meeting/ParticipantsPanel.tsx` (1-125)
+- `frontend/src/app/meeting/[code]/page.tsx` (1-205)

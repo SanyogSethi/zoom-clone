@@ -65,3 +65,10 @@ This file tracks all created and modified files across implementation steps, det
 - `frontend/src/components/layout/Navbar.tsx` (1-65)
 - `frontend/src/components/layout/Sidebar.tsx` (1-35)
 - `frontend/src/app/layout.tsx` (1-20)
+
+## Step 5: Dashboard Workflows (Instant, Schedule, Join & Recent/Rejoin)
+- `frontend/src/hooks/useMeetings.ts` (1-105)
+- `frontend/src/components/dashboard/JoinDialog.tsx` (1-105)
+- `frontend/src/components/dashboard/ScheduleModal.tsx` (1-180)
+- `frontend/src/app/j/[code]/page.tsx` (1-35)
+- `frontend/src/app/page.tsx` (1-240)

@@ -24,8 +24,8 @@ export default function MeetingRoomPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [secondsElapsed, setSecondsElapsed] = useState<number>(0);
 
-  // Request camera access ONLY when inside active meeting room session
-  const { videoRef, isMuted, isVideoOff, toggleMute, toggleVideo, stopCamera } = useCamera({
+  // Request camera & microphone access ONLY when inside active meeting room session
+  const { videoRef, isMuted, isVideoOff, isSpeaking, toggleMute, toggleVideo, stopCamera } = useCamera({
     enabled: !loading,
   });
 
@@ -190,6 +190,7 @@ export default function MeetingRoomPage() {
             videoRef={videoRef}
             isVideoOff={isVideoOff}
             isMuted={isMuted}
+            isSpeaking={isSpeaking}
             remoteParticipants={activeParticipants.filter((p) => p.user_id !== 1)}
           />
         </div>

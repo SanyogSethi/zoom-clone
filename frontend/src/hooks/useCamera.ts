@@ -11,6 +11,7 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isVideoOff, setIsVideoOff] = useState<boolean>(false);
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -25,6 +26,7 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
     }
     setStream(null);
     setHasPermission(null);
+    setIsSpeaking(false);
   }, []);
 
   // Request camera and microphone access only when enabled is true
@@ -59,6 +61,57 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
     };
   }, [enabled, initCamera]);
 
+  // Web Audio API Voice Activity Detection (VAD)
+  useEffect(() => {
+    if (!stream || isMuted) {
+      setIsSpeaking(false);
+      return;
+    }
+
+    const audioTracks = stream.getAudioTracks();
+    if (audioTracks.length === 0 || !audioTracks[0].enabled) {
+      setIsSpeaking(false);
+      return;
+    }
+
+    let audioContext: AudioContext | null = null;
+    let animFrameId: number;
+
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      audioContext = new AudioCtx();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      const checkAudio = () => {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const avg = sum / dataArray.length;
+        // Green border lights up only when input volume exceeds threshold (> 12)
+        setIsSpeaking(avg > 12);
+        animFrameId = requestAnimationFrame(checkAudio);
+      };
+
+      checkAudio();
+    } catch (err) {
+      console.warn("AudioContext VAD initialization warning:", err);
+    }
+
+    return () => {
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      if (audioContext && audioContext.state !== "closed") {
+        audioContext.close();
+      }
+    };
+  }, [stream, isMuted]);
+
   // Ensure video element receives stream when stream updates
   useEffect(() => {
     if (videoRef.current && stream) {
@@ -67,19 +120,17 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
   }, [stream]);
 
   // Toggle Mute: when muting, stop audio tracks to release microphone hardware access completely.
-  // When unmuting, re-acquire audio track via getUserMedia and attach to stream.
   const toggleMute = useCallback(async () => {
     if (!streamRef.current) return;
 
     if (!isMuted) {
-      // Muting: stop audio tracks so microphone hardware turns off
       streamRef.current.getAudioTracks().forEach((track) => {
         track.stop();
         streamRef.current?.removeTrack(track);
       });
       setIsMuted(true);
+      setIsSpeaking(false);
     } else {
-      // Unmuting: re-acquire audio track and attach to stream
       try {
         const newAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const newAudioTrack = newAudioStream.getAudioTracks()[0];
@@ -93,20 +144,17 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
     }
   }, [isMuted]);
 
-  // Toggle Video: when stopping video, stop hardware video tracks so camera light turns OFF.
-  // When starting video, acquire new video track and re-attach to stream and video element.
+  // Toggle Video: when stopping video, stop video tracks so camera light turns OFF.
   const toggleVideo = useCallback(async () => {
     if (!streamRef.current) return;
 
     if (!isVideoOff) {
-      // Stopping video: stop video tracks to turn off hardware camera light
       streamRef.current.getVideoTracks().forEach((track) => {
         track.stop();
         streamRef.current?.removeTrack(track);
       });
       setIsVideoOff(true);
     } else {
-      // Starting video: re-acquire video track and attach to stream
       try {
         const newVideoStream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -130,6 +178,7 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
     videoRef,
     isMuted,
     isVideoOff,
+    isSpeaking,
     hasPermission,
     toggleMute,
     toggleVideo,

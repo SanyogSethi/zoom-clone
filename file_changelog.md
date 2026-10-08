@@ -95,7 +95,7 @@ This file tracks all created and modified files across implementation steps, det
 - `README.md` (1-160) - Updated root documentation with Mermaid ERD, architecture overview, design decisions, setup instructions, and deployment links.
 - `file_changelog.md` (1-110) - Final step changelog recording created and edited files by step with exact line ranges.
 
-## Follow-up Fixes:
-- `frontend/src/components/ui/Toast.tsx` (1-42) - Auto-dismiss timer fix.
-- `frontend/src/hooks/useCamera.ts` (1-135) - `toggleMute` stops audio tracks (`track.stop()`) on Mute to release microphone hardware access completely, and re-acquires a fresh audio track via `getUserMedia({ audio: true })` on Unmute.
-- `frontend/src/components/meeting/VideoTile.tsx` (1-65) - Keeps `<video>` DOM element mounted so `videoRef` remains attached seamlessly across video start/stop toggles.
+## Follow-up Enhancements:
+- `frontend/src/components/ui/Toast.tsx` (1-45) - Auto-dismiss & smooth entrance/exit keyframe animations.
+- `frontend/src/hooks/useCamera.ts` (1-165) - Integrated Web Audio API (`AudioContext` + `AnalyserNode`) for real-time voice activity detection (`isSpeaking`) to highlight green active speaker border strictly when microphone input is detected.
+- `frontend/src/components/meeting/VideoGrid.tsx` (1-85) - Passed dynamic `isSpeaking` state to `VideoTile`.

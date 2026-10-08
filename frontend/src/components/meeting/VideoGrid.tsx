@@ -9,6 +9,7 @@ export interface VideoGridProps {
   videoRef: React.RefObject<HTMLVideoElement>;
   isVideoOff: boolean;
   isMuted: boolean;
+  isSpeaking: boolean;
   remoteParticipants: Participant[];
 }
 
@@ -17,6 +18,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
   videoRef,
   isVideoOff,
   isMuted,
+  isSpeaking,
   remoteParticipants,
 }) => {
   const allTiles = [
@@ -27,6 +29,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
       videoRef,
       isVideoOff,
       isMuted,
+      isSpeaking,
     },
     ...remoteParticipants.map((p) => ({
       id: `remote_${p.id}`,
@@ -35,13 +38,14 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
       videoRef: undefined,
       isVideoOff: true,
       isMuted: Boolean(p.is_muted),
+      isSpeaking: false,
     })),
   ];
 
   const total = allTiles.length;
 
   if (total === 1) {
-    // Single Participant (fills container bounded by height/width aspect ratio)
+    // Single Participant (Green border lights up ONLY when microphone input is detected)
     return (
       <div className="w-full h-full min-h-0 p-4 flex items-center justify-center overflow-hidden">
         <div className="w-full h-full max-w-5xl max-h-full aspect-video">
@@ -51,7 +55,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
             videoRef={allTiles[0].videoRef}
             isVideoOff={allTiles[0].isVideoOff}
             isMuted={allTiles[0].isMuted}
-            isActiveSpeaker={true}
+            isActiveSpeaker={allTiles[0].isSpeaking}
           />
         </div>
       </div>
@@ -68,7 +72,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
 
   return (
     <div className={`w-full h-full min-h-0 p-4 grid ${gridClass} gap-4 overflow-hidden`}>
-      {allTiles.map((tile, index) => (
+      {allTiles.map((tile) => (
         <div key={tile.id} className="w-full h-full min-h-0 overflow-hidden flex items-center justify-center">
           <VideoTile
             participant={tile.participant}
@@ -76,7 +80,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
             videoRef={tile.videoRef}
             isVideoOff={tile.isVideoOff}
             isMuted={tile.isMuted}
-            isActiveSpeaker={index === 0}
+            isActiveSpeaker={tile.isSpeaking}
           />
         </div>
       ))}

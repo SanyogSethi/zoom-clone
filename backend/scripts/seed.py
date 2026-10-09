@@ -24,12 +24,15 @@ def seed_data():
         now = datetime.now(timezone.utc)
 
         # 1. Create Users (User ID 1 = Default logged-in user)
+        from app.core.security import hash_password
+        default_pw = hash_password("password123")
+
         users = [
-            User(id=1, email="sanyog@example.com", display_name="Sanyog Sethi", avatar_url="https://api.dicebear.com/7.x/avataaars/svg?seed=Sanyog", timezone="UTC"),
-            User(id=2, email="alice@example.com", display_name="Alice Smith", avatar_url="https://api.dicebear.com/7.x/avataaars/svg?seed=Alice", timezone="UTC"),
-            User(id=3, email="bob@example.com", display_name="Bob Johnson", avatar_url="https://api.dicebear.com/7.x/avataaars/svg?seed=Bob", timezone="UTC"),
-            User(id=4, email="charlie@example.com", display_name="Charlie Lee", avatar_url="https://api.dicebear.com/7.x/avataaars/svg?seed=Charlie", timezone="UTC"),
-            User(id=5, email="diana@example.com", display_name="Diana Prince", avatar_url="https://api.dicebear.com/7.x/avataaars/svg?seed=Diana", timezone="UTC"),
+            User(id=1, email="sanyog@example.com", display_name="Sanyog Sethi", password_hash=default_pw, avatar_url=None, timezone="UTC"),
+            User(id=2, email="alice@example.com", display_name="Alice Smith", password_hash=default_pw, avatar_url=None, timezone="UTC"),
+            User(id=3, email="bob@example.com", display_name="Bob Johnson", password_hash=default_pw, avatar_url=None, timezone="UTC"),
+            User(id=4, email="charlie@example.com", display_name="Charlie Lee", password_hash=default_pw, avatar_url=None, timezone="UTC"),
+            User(id=5, email="diana@example.com", display_name="Diana Prince", password_hash=default_pw, avatar_url=None, timezone="UTC"),
         ]
         db.add_all(users)
         db.commit()

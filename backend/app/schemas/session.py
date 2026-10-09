@@ -2,7 +2,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
 class SessionJoinRequest(BaseModel):
-    display_name: str = Field(..., min_length=1, max_length=50)
+    display_name: Optional[str] = None
+    participant_id: Optional[int] = None
 
 class SessionJoinResponse(BaseModel):
     session_id: int
@@ -10,6 +11,7 @@ class SessionJoinResponse(BaseModel):
     meeting_code: str
     title: str
     role: str
+    display_name: str
 
 class ParticipantResponse(BaseModel):
     id: int

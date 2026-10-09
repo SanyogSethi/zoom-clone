@@ -1,6 +1,6 @@
 export interface User {
   id: number;
-  email: str;
+  email: string;
   display_name: string;
   avatar_url?: string;
   timezone: string;
@@ -52,6 +52,7 @@ export interface SessionJoinResponse {
   meeting_code: string;
   title: string;
   role: 'host' | 'participant';
+  display_name: string;
 }
 
 export interface Participant {

@@ -34,6 +34,10 @@ export function useMeetings() {
 
   useEffect(() => {
     fetchMeetings();
+    const timer = setTimeout(() => {
+      fetchMeetings();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [fetchMeetings]);
 
   // Workflow 1: Instant Meeting Creation
@@ -44,7 +48,11 @@ export function useMeetings() {
       const response = await api.createInstantMeeting();
       // Store session and participant IDs in sessionStorage for meeting room initialization
       sessionStorage.setItem(`session_${response.meeting_code}`, JSON.stringify(response));
-      router.push(`/meeting/${response.meeting_code}`);
+      if (typeof window !== "undefined") {
+        window.location.href = `/meeting/${response.meeting_code}`;
+      } else {
+        router.push(`/meeting/${response.meeting_code}`);
+      }
       return response;
     } catch (err: any) {
       setError(err.message || "Failed to create instant meeting.");
@@ -57,8 +65,8 @@ export function useMeetings() {
   // Workflow 2: Join Meeting by Code or Invite Link
   const joinMeeting = async (inputCode: string, displayName?: string): Promise<SessionJoinResponse | null> => {
     const rawCode = extractCodeFromInput(inputCode);
-    if (!rawCode || rawCode.length !== 10) {
-      throw new Error("Please enter a valid 10-digit Meeting ID or invite URL.");
+    if (!rawCode || rawCode.length < 5) {
+      throw new Error("Please enter a valid Meeting ID or invite URL.");
     }
 
     setActionLoading(true);
@@ -66,7 +74,11 @@ export function useMeetings() {
     try {
       const response = await api.joinMeeting(rawCode, displayName);
       sessionStorage.setItem(`session_${response.meeting_code}`, JSON.stringify(response));
-      router.push(`/meeting/${response.meeting_code}`);
+      if (typeof window !== "undefined") {
+        window.location.href = `/meeting/${response.meeting_code}`;
+      } else {
+        router.push(`/meeting/${response.meeting_code}`);
+      }
       return response;
     } catch (err: any) {
       throw err;
@@ -98,16 +110,19 @@ export function useMeetings() {
   // Workflow 4: Rejoin Live Session
   const rejoinMeeting = async (meetingCode: string): Promise<SessionJoinResponse | null> => {
     setActionLoading(true);
-    setError(null);
     try {
-      // Rejoin skips display name prompt and reuses previous display name automatically
-      const response = await api.joinMeeting(meetingCode);
+      const storedName =
+        typeof window !== "undefined" ? localStorage.getItem("zoom_display_name") || undefined : undefined;
+      const response = await api.joinMeeting(meetingCode, storedName);
       sessionStorage.setItem(`session_${response.meeting_code}`, JSON.stringify(response));
-      router.push(`/meeting/${response.meeting_code}`);
+      if (typeof window !== "undefined") {
+        window.location.href = `/meeting/${response.meeting_code}`;
+      } else {
+        router.push(`/meeting/${response.meeting_code}`);
+      }
       return response;
     } catch (err: any) {
-      const msg = err instanceof ApiError ? err.message : "Failed to rejoin meeting.";
-      setError(msg);
+      console.error("Rejoin meeting failed:", err);
       throw err;
     } finally {
       setActionLoading(false);

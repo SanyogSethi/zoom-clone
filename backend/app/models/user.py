@@ -9,6 +9,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     email = Column(String, unique=True, nullable=False)
     display_name = Column(String, nullable=False)
+    password_hash = Column(String, nullable=True)
     avatar_url = Column(String, nullable=True)
     timezone = Column(String, nullable=False, default="UTC")
     created_at = Column(String, nullable=False, default=lambda: datetime.now(timezone.utc).isoformat())

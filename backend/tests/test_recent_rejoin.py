@@ -38,3 +38,11 @@ def test_recent_meetings_and_rejoin_eligibility(client, db_session):
 
     assert live_item["can_rejoin"] is True
     assert ended_item["can_rejoin"] is False
+
+    # Verify rejoining live meeting via POST endpoint succeeds (200 OK)
+    rejoin_resp = client.post("/api/meetings/4444444444/join", json={})
+    assert rejoin_resp.status_code == 200
+    rejoin_data = rejoin_resp.json()
+    assert rejoin_data["meeting_code"] == "4444444444"
+    assert rejoin_data["role"] == "host"
+

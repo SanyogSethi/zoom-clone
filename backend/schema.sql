@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT NOT NULL UNIQUE,
   display_name TEXT NOT NULL,
+  password_hash TEXT,
   avatar_url TEXT,
   timezone TEXT NOT NULL DEFAULT 'UTC',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))

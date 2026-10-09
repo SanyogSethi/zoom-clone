@@ -84,7 +84,8 @@ class MeetingService:
             participant_id=participant.id,
             meeting_code=meeting_code,
             title=meeting.title,
-            role="host"
+            role="host",
+            display_name=user.display_name
         )
 
     def schedule_meeting(self, user: User, data: MeetingCreate) -> MeetingResponse:

@@ -79,4 +79,5 @@ def join_meeting(
     """
     service = SessionService(db)
     display_name = payload.display_name if payload else None
-    return service.join_meeting(code, current_user, display_name)
+    participant_id = payload.participant_id if payload else None
+    return service.join_meeting(code, current_user, display_name, participant_id)

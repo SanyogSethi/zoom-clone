@@ -1,4 +1,5 @@
 from typing import List, Optional
+from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -19,10 +20,16 @@ class SessionService:
         self.session_repo = SessionRepository(db)
         self.participant_repo = ParticipantRepository(db)
 
-    def join_meeting(self, meeting_code: str, user: User, display_name: Optional[str] = None) -> SessionJoinResponse:
+    def join_meeting(
+        self,
+        meeting_code: str,
+        user: User,
+        display_name: Optional[str] = None,
+        participant_id: Optional[int] = None
+    ) -> SessionJoinResponse:
         """
         Validates meeting code, handles session creation for scheduled meetings, checks removal status,
-        and creates a new participant record per join.
+        and creates a unique participant record per joiner.
         """
         meeting = self.meeting_repo.get_by_code(meeting_code)
         if not meeting:
@@ -31,17 +38,36 @@ class SessionService:
                 detail="Meeting not found. Please check the Meeting ID."
             )
 
-        if meeting.status == "ended":
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="This meeting has ended."
-            )
-
         now_str = utcnow_iso()
         session = self.session_repo.get_active_session_by_meeting_id(meeting.id)
 
-        # Joining a scheduled meeting with no live session creates the session (status becomes live in ONE transaction)
+        # Joining a meeting with no active live session creates a new session and reactivates meeting status to live
         if not session:
+            # For scheduled meetings, non-hosts cannot join before the host starts the meeting or before scheduled start time
+            if meeting.type == "scheduled":
+                if meeting.scheduled_start:
+                    try:
+                        clean_iso = meeting.scheduled_start.replace("Z", "+00:00")
+                        scheduled_dt = datetime.fromisoformat(clean_iso)
+                        if scheduled_dt.tzinfo is None:
+                            scheduled_dt = scheduled_dt.replace(tzinfo=timezone.utc)
+                        now_dt = datetime.now(timezone.utc)
+                        if scheduled_dt > now_dt and meeting.host_id != user.id:
+                            raise HTTPException(
+                                status_code=status.HTTP_400_BAD_REQUEST,
+                                detail="This scheduled meeting has not started yet."
+                            )
+                    except HTTPException:
+                        raise
+                    except Exception:
+                        pass
+
+                if meeting.host_id != user.id:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="This scheduled meeting has not started yet."
+                    )
+
             session = MeetingSession(
                 meeting_id=meeting.id,
                 started_at=now_str,
@@ -58,18 +84,38 @@ class SessionService:
             )
 
         # Determine display name: use provided, or reuse previous participant display name, or default user name
-        final_display_name = display_name
+        final_display_name = display_name if display_name and str(display_name).strip() else None
+
+        # Check if caller is explicitly rejoining with an existing participant_id
+        if participant_id:
+            existing_p = self.participant_repo.get_by_id(participant_id)
+            if existing_p and existing_p.session_id == session.id:
+                existing_p.status = "joined"
+                if final_display_name:
+                    existing_p.display_name = final_display_name
+                self.db.commit()
+                return SessionJoinResponse(
+                    session_id=session.id,
+                    participant_id=existing_p.id,
+                    meeting_code=meeting.meeting_code,
+                    title=meeting.title,
+                    role=existing_p.role,
+                    display_name=existing_p.display_name
+                )
+
         if not final_display_name:
-            prev_p = self.participant_repo.get_user_latest_participant_in_session(session.id, user.id)
-            if prev_p and prev_p.display_name:
-                final_display_name = prev_p.display_name
-            else:
-                final_display_name = user.display_name
+            final_display_name = user.display_name
 
-        # Determine participant role
-        role = "host" if meeting.host_id == user.id else "participant"
+        # Determine participant role: host ONLY if no host exists in session yet and user is meeting creator
+        existing_participants = self.participant_repo.get_joined_participants(session.id)
+        has_host = any(p.role == "host" for p in existing_participants)
 
-        # Create new participant row (preserves per-stay history)
+        if not has_host and meeting.host_id == user.id:
+            role = "host"
+        else:
+            role = "participant"
+
+        # Create a new unique participant row for this joiner
         participant = Participant(
             session_id=session.id,
             user_id=user.id,
@@ -81,7 +127,6 @@ class SessionService:
             left_at=None
         )
         self.participant_repo.create(participant)
-
         self.db.commit()
 
         return SessionJoinResponse(
@@ -89,27 +134,26 @@ class SessionService:
             participant_id=participant.id,
             meeting_code=meeting.meeting_code,
             title=meeting.title,
-            role=role
+            role=role,
+            display_name=participant.display_name
         )
 
     def leave_session(self, session_id: int, participant_id: int, user: User):
         """
         Updates participant status to 'left'. If no joined participants remain,
         ends session and meeting status in ONE transaction.
+        Idempotent: returns 200 OK even if session or participant record does not exist or has already left.
         """
         session = self.session_repo.get_by_id(session_id)
         if not session:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Meeting session not found."
-            )
+            return {"detail": "Successfully left meeting session"}
 
         participant = self.participant_repo.get_by_id(participant_id)
         if not participant or participant.session_id != session_id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Participant record not found."
-            )
+            return {"detail": "Successfully left meeting session"}
+
+        if participant.status in ("left", "removed"):
+            return {"detail": "Successfully left meeting session"}
 
         now_str = utcnow_iso()
         participant.status = "left"
@@ -131,20 +175,15 @@ class SessionService:
     def end_session(self, session_id: int, user: User):
         """
         Host-only action: ends session and meeting in ONE transaction and marks all joined participants as left.
+        Idempotent: returns 200 OK if session or meeting is missing or already ended.
         """
         session = self.session_repo.get_by_id(session_id)
         if not session:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Meeting session not found."
-            )
+            return {"detail": "Meeting ended for all participants"}
 
         meeting = self.meeting_repo.get_by_id(session.meeting_id)
         if not meeting:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Meeting not found."
-            )
+            return {"detail": "Meeting ended for all participants"}
 
         if meeting.host_id != user.id:
             raise HTTPException(
@@ -226,16 +265,34 @@ class SessionService:
         self.db.commit()
         return {"detail": "Participant muted"}
 
-    def remove_participant(self, participant_id: int, user: User):
+    def unmute_participant(self, participant_id: int, user: User):
         """
-        Host-only action: removes a participant from the session and prevents rejoining.
+        Unmutes a specific participant.
         """
         participant = self.participant_repo.get_by_id(participant_id)
         if not participant:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participant not found.")
 
+        participant.is_muted = 0
+        self.db.commit()
+        return {"detail": "Participant unmuted"}
+
+    def remove_participant(self, participant_id: int, user: User):
+        """
+        Host-only action: removes a participant from the session and prevents rejoining.
+        Idempotent: returns 200 OK if participant is missing or already removed.
+        """
+        participant = self.participant_repo.get_by_id(participant_id)
+        if not participant or participant.status == "removed":
+            return {"detail": "Participant removed from meeting"}
+
         session = self.session_repo.get_by_id(participant.session_id)
+        if not session:
+            return {"detail": "Participant removed from meeting"}
+
         meeting = self.meeting_repo.get_by_id(session.meeting_id)
+        if not meeting:
+            return {"detail": "Participant removed from meeting"}
 
         if meeting.host_id != user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only host can remove participants.")

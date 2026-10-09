@@ -21,12 +21,24 @@ export class ApiError extends Error {
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
+
+  let authToken = typeof window !== "undefined" ? localStorage.getItem("zoom_auth_token") : null;
+  if (!authToken && typeof window !== "undefined") {
+    authToken = localStorage.getItem("zoom_auth_profile") || "user_1";
+  }
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+
   const config: RequestInit = {
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
     ...options,
+    headers,
   };
 
   const response = await fetch(url, config);
@@ -36,19 +48,53 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     try {
       const errorData = await response.json();
       if (errorData && errorData.detail) {
-        errorMessage = errorData.detail;
+        if (typeof errorData.detail === "string") {
+          errorMessage = errorData.detail;
+        } else if (Array.isArray(errorData.detail)) {
+          errorMessage = errorData.detail
+            .map((item: any) => (typeof item === "string" ? item : item.msg || JSON.stringify(item)))
+            .join("; ");
+        } else if (typeof errorData.detail === "object") {
+          errorMessage = errorData.detail.msg || JSON.stringify(errorData.detail);
+        }
       }
     } catch {
       errorMessage = response.statusText || errorMessage;
     }
-    throw new ApiError(errorMessage, response.status);
+    throw new ApiError(String(errorMessage), response.status);
   }
 
   return response.json() as Promise<T>;
 }
 
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+}
+
 export const api = {
-  getMe: () => request<User>("/users/me"),
+  getMe: () => request<User>("/auth/me"),
+
+  getAuthProfiles: () => request<User[]>("/auth/profiles"),
+
+  register: (data: { email: string; display_name: string; password: string }) =>
+    request<AuthResponse>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  login: (data: { email: string; password: string }) =>
+    request<AuthResponse>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  loginWithGoogle: (credential: string) =>
+    request<AuthResponse>("/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ credential }),
+    }),
 
   getUpcomingMeetings: () => request<UpcomingMeeting[]>("/meetings/upcoming"),
 
@@ -70,10 +116,10 @@ export const api = {
 
   getMeetingByCode: (code: string) => request<Meeting>(`/meetings/${code}`),
 
-  joinMeeting: (code: string, displayName?: string) =>
+  joinMeeting: (code: string, displayName?: string, participantId?: number) =>
     request<SessionJoinResponse>(`/meetings/${code}/join`, {
       method: "POST",
-      body: JSON.stringify({ display_name: displayName }),
+      body: JSON.stringify({ display_name: displayName, participant_id: participantId }),
     }),
 
   leaveSession: (sessionId: number, participantId: number) =>
@@ -100,8 +146,38 @@ export const api = {
       method: "POST",
     }),
 
+  unmuteParticipant: (participantId: number) =>
+    request<{ detail: string }>(`/participants/${participantId}/unmute`, {
+      method: "POST",
+    }),
+
   removeParticipant: (participantId: number) =>
     request<{ detail: string }>(`/participants/${participantId}/remove`, {
       method: "POST",
     }),
+
+  sendSignal: (data: {
+    meeting_code: string;
+    from_id: string;
+    to_id?: string | null;
+    type: string;
+    data: any;
+  }) =>
+    request<{ status: string }>("/signaling/send", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  pollSignals: (meetingCode: string, participantId: string) =>
+    request<
+      Array<{
+        id: string;
+        from_id: string;
+        to_id: string | null;
+        type: string;
+        data: any;
+        timestamp: number;
+      }>
+    >(`/signaling/poll?meeting_code=${meetingCode}&participant_id=${participantId}`),
 };
+

@@ -1,70 +1,100 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, HelpCircle, Bell, Calendar, Video } from "lucide-react";
+import { Search, Bell, Calendar, ChevronLeft, ChevronRight, Plus, UserCheck } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { api } from "@/lib/api";
+import { User } from "@/lib/types";
 
 export const Navbar: React.FC = () => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  useEffect(() => {
+    // Load current user profile from server or storage
+    api
+      .getMe()
+      .then((user) => setCurrentUser(user))
+      .catch(() => {
+        const stored = localStorage.getItem("zoom_user");
+        if (stored) {
+          try {
+            setCurrentUser(JSON.parse(stored));
+          } catch {}
+        }
+      });
+  }, []);
+
   return (
-    <header className="sticky top-0 left-0 right-0 h-16 bg-[#1F1F1F] text-white border-b border-neutral-800 flex items-center justify-between px-4 select-none z-50 shrink-0">
-      {/* Left: Zoom Workplace Wordmark & Search */}
-      <div className="flex items-center gap-5">
-        <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight hover:opacity-90">
-          <span className="text-zoom-blue text-2xl font-black">zoom</span>
-          <span className="text-white text-base font-semibold">Workplace</span>
-        </Link>
+    <>
+      <header className="sticky top-0 left-0 right-0 h-12 bg-[#18181A] text-white border-b border-neutral-800/80 flex items-center justify-between px-3.5 select-none z-50 shrink-0">
+        {/* Left: Zoom Workplace Wordmark & Navigation */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link href="/" className="flex items-center gap-1.5 font-bold text-sm tracking-tight hover:opacity-90">
+            <span className="text-[#0B5CFF] text-base font-black lowercase">zoom</span>
+            <span className="text-white text-xs font-semibold hidden xs:inline">Workplace</span>
+          </Link>
 
-        {/* Global Search Bar */}
-        <div className="relative hidden md:flex items-center">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3" />
-          <input
-            type="text"
-            placeholder="Search"
-            readOnly
-            className="w-44 lg:w-60 pl-9 pr-12 py-1.5 bg-neutral-900 border border-neutral-700 rounded-lg text-xs text-white placeholder-gray-400 cursor-pointer focus:outline-none"
-          />
-          <kbd className="absolute right-3 text-[10px] bg-neutral-800 text-gray-400 px-1.5 py-0.5 rounded font-mono">
-            ⌘F
-          </kbd>
+          {/* History Arrows */}
+          <div className="hidden md:flex items-center gap-1 text-gray-400 ml-2">
+            <button className="hover:text-white p-0.5"><ChevronLeft className="w-3.5 h-3.5" /></button>
+            <button className="hover:text-white p-0.5"><ChevronRight className="w-3.5 h-3.5" /></button>
+          </div>
         </div>
-      </div>
 
-      {/* Center Navigation Tabs */}
-      <nav className="flex items-center gap-1">
-        <Link
-          href="/"
-          className="flex flex-col items-center px-4 py-1 rounded-lg bg-neutral-800 text-white font-medium text-xs hover:bg-neutral-700 transition-colors"
-        >
-          <Video className="w-4 h-4 mb-0.5" />
-          <span>Home</span>
-        </Link>
-        <Link
-          href="/#meetings"
-          className="flex flex-col items-center px-4 py-1 rounded-lg text-gray-400 font-medium text-xs hover:text-white hover:bg-neutral-800 transition-colors"
-        >
-          <Calendar className="w-4 h-4 mb-0.5" />
-          <span>Meetings</span>
-        </Link>
-      </nav>
-
-      {/* Right Tools & User Profile */}
-      <div className="flex items-center gap-3.5">
-        <button title="Help" className="text-gray-400 hover:text-white transition-colors p-1">
-          <HelpCircle className="w-5 h-5" />
-        </button>
-        <button title="Notifications" className="text-gray-400 hover:text-white transition-colors relative p-1">
-          <Bell className="w-5 h-5" />
-          <span className="w-2 h-2 bg-zoom-orange rounded-full absolute top-1 right-1" />
-        </button>
-        <button title="Calendar" className="text-gray-400 hover:text-white transition-colors p-1">
-          <Calendar className="w-5 h-5" />
-        </button>
-        <div className="border-l border-neutral-700 h-5 mx-0.5" />
-        <div className="flex items-center gap-2 cursor-pointer">
-          <Avatar name="Sanyog Sethi" size="sm" showStatus={true} />
+        {/* Center: Global Search Bar */}
+        <div className="hidden sm:flex items-center gap-2 max-w-xs md:max-w-md w-full mx-2 sm:mx-4">
+          <div className="relative flex-1 flex items-center">
+            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3" />
+            <input
+              type="text"
+              placeholder="Search (⌘E)"
+              readOnly
+              className="w-full pl-8 pr-4 py-1 bg-[#242427] border border-neutral-700/60 rounded-md text-xs text-white placeholder-gray-400 cursor-pointer focus:outline-none text-center"
+            />
+          </div>
+          <button title="Create" className="text-gray-400 hover:text-white p-1">
+            <Plus className="w-4 h-4" />
+          </button>
         </div>
-      </div>
-    </header>
+
+        {/* Right Tools & Profile */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button className="hidden sm:inline-block px-3 py-1 bg-[#0B5CFF] hover:bg-blue-600 text-white font-semibold text-xs rounded-full transition-colors shadow-sm">
+            Upgrade
+          </button>
+          <button title="Notifications" className="text-gray-300 hover:text-white transition-colors relative p-1">
+            <Bell className="w-4 h-4" />
+            <span className="w-2 h-2 bg-[#FF742E] rounded-full absolute top-0.5 right-0.5" />
+          </button>
+          <button title="Calendar" className="hidden xs:block text-gray-300 hover:text-white transition-colors p-1">
+            <Calendar className="w-4 h-4" />
+          </button>
+          
+          {/* Active Profile Trigger */}
+          <button
+            onClick={() => setIsAuthOpen(true)}
+            className="flex items-center gap-2 cursor-pointer ml-1 p-1 hover:bg-neutral-800/60 rounded-lg transition-colors group"
+            title="Switch User / Account"
+          >
+            <Avatar name={currentUser?.display_name || "Sanyog Sethi"} size="sm" showStatus={true} />
+            <span className="text-xs font-medium text-neutral-300 group-hover:text-white max-w-[100px] truncate hidden md:inline">
+              {currentUser?.display_name || "Sanyog Sethi"}
+            </span>
+          </button>
+        </div>
+      </header>
+
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onAuthSuccess={(user) => {
+          setCurrentUser(user);
+          window.location.reload();
+        }}
+      />
+    </>
   );
 };

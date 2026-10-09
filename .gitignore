@@ -35,3 +35,5 @@ env/
 *.pem
 .vscode/
 .idea/
+*.tsbuildinfo
+

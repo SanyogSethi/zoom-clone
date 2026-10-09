@@ -1,17 +1,24 @@
-# zoom-clone-scalerAI-assessment
+# Zoom Clone - Scaler AI Assessment
 
-**Author: sanyog-sethi**
-
-A full-stack Zoom web app clone built for the SDE assignment. Designed and implemented to match Zoom's UI/UX, meeting room behaviors, scheduling, and live session rejoin mechanics.
+A full-stack, production-grade Zoom web application clone built for the Scaler AI SDE assessment. Designed and implemented to replicate Zoom Workplace's desktop UI/UX, meeting room behaviors, audio/video streaming, scheduling, participant controls, and authentication.
 
 ---
 
 ## 🚀 Tech Stack
 
-- **Frontend**: Next.js 14 (App Router, TypeScript, Tailwind CSS, Client Components, Lucide Icons)
-- **Backend**: Python 3.9+, FastAPI, SQLAlchemy 2.0, Pydantic v2, Uvicorn
-- **Database**: SQLite with `PRAGMA foreign_keys = ON`
-- **Testing**: pytest & FastAPI TestClient
+### Frontend
+- **Framework**: Next.js 14 (App Router, Client Components, TypeScript)
+- **Styling & UI**: Tailwind CSS (Custom Zoom Dark Mode design tokens, animations, custom scrollbars)
+- **Icons**: Lucide React
+- **Real-Time Video/Audio**: WebRTC (`RTCPeerConnection`, Web Audio API synthetic tracks, Perfect Negotiation pattern with glare handling)
+- **Signaling Relay**: Dual engine (Local `BroadcastChannel` for same-browser tabs + HTTP Polling Relay for cross-profile / cross-device peers)
+
+### Backend
+- **Framework**: Python 3.9+, FastAPI, Uvicorn
+- **Database**: SQLite 3 with SQLAlchemy 2.0 ORM & `PRAGMA foreign_keys = ON`
+- **Security & Auth**: Bcrypt password hashing, PyJWT authentication tokens, Google OAuth token verification fallback, Header-based user context fallback
+- **Validation & Schemas**: Pydantic v2
+- **Testing**: `pytest` with FastAPI `TestClient` (15 passing unit tests)
 
 ---
 
@@ -111,52 +118,105 @@ erDiagram
     }
 ```
 
+### Database Schema (DBML Format for [dbdiagram.io](https://dbdiagram.io))
+
+```dbml
+// Zoom Clone Database Schema
+
+Table users {
+  id integer [pk, increment]
+  email varchar [unique, not null]
+  password_hash text [note: 'Bcrypt hashed password']
+  display_name varchar [not null]
+  avatar_url text
+  timezone varchar [default: 'UTC']
+  created_at varchar [not null, note: 'ISO-8601 UTC']
+}
+
+Table meetings {
+  id integer [pk, increment]
+  host_id integer [not null, ref: > users.id]
+  meeting_code varchar [unique, not null, note: '10-digit unique code']
+  title varchar [not null]
+  description text
+  type varchar [not null, note: 'instant or scheduled']
+  scheduled_start varchar [note: 'ISO-8601 UTC start time']
+  duration_minutes integer
+  status varchar [not null, default: 'scheduled', note: 'scheduled, live, or ended']
+  created_at varchar [not null]
+}
+
+Table meeting_sessions {
+  id integer [pk, increment]
+  meeting_id integer [not null, ref: > meetings.id]
+  started_at varchar [not null]
+  ended_at varchar [note: 'NULL indicates live active session']
+}
+
+Table participants {
+  id integer [pk, increment]
+  session_id integer [not null, ref: > meeting_sessions.id]
+  user_id integer [not null, ref: > users.id]
+  display_name varchar [not null]
+  role varchar [not null, note: 'host or participant']
+  status varchar [not null, note: 'joined, left, or removed']
+  is_muted integer [default: 0, note: '0 = unmuted, 1 = muted by host']
+  joined_at varchar [not null]
+  left_at varchar
+}
+```
+
 ---
 
-## ⚙️ Setup & Local Execution
+## 💻 Setup & Local Execution
+
+### Prerequisites
+- Node.js v18+ and `npm`
+- Python 3.9+ and `pip`
 
 ### 1. Backend Setup (FastAPI)
 
 ```bash
 cd backend
 
-# Create & activate virtual environment
+# 1. Create and activate a Python virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
-# Install dependencies
+# 2. Install backend dependencies
 pip install -r requirements.txt
 
-# Run database seed (creates zoom.db)
+# 3. Seed the database with initial users and scheduled meetings
 python scripts/seed.py
 
-# Run FastAPI server
+# 4. Start the FastAPI development server
 uvicorn app.main:app --reload --port 8000
 ```
-- API Base URL: `http://localhost:8000/api`
-- Interactive Swagger Docs: `http://localhost:8000/docs`
+- **API Base URL**: `http://localhost:8000/api`
+- **Interactive OpenAPI / Swagger Docs**: `http://localhost:8000/docs`
 
 ### 2. Frontend Setup (Next.js)
 
 ```bash
 cd frontend
 
-# Install dependencies
+# 1. Install frontend dependencies
 npm install
 
-# Run dev server
+# 2. Start the Next.js development server
 npm run dev
 ```
-- Web Application URL: `http://localhost:3000`
+- **Web Application URL**: `http://localhost:3000`
 
 ---
 
-## 🛠️ Environment Variables
+## ⚙️ Environment Variables
 
 ### Backend (`backend/.env`)
 ```env
 FRONTEND_URL=http://localhost:3000
 DATABASE_URL=sqlite:///./zoom.db
+JWT_SECRET=supersecretjwtkey_change_in_production
 ```
 
 ### Frontend (`frontend/.env.local`)
@@ -166,29 +226,51 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api
 
 ---
 
-## 🧪 Running Backend Unit Tests
+## 🧪 Running Unit Tests & Type Checking
 
+### Backend Unit Tests (Pytest)
 ```bash
 cd backend
-./venv/bin/python -m pytest
+PYTHONPATH=. ./venv/bin/pytest
 ```
-Covers 10-digit meeting code uniqueness, join validation (404 / 409 / 403), recent session rejoin eligibility, and upcoming query filters.
+- **Coverage**: 15 unit tests covering auth registration/login, 10-digit meeting code generation, scheduled meeting start validation, host mute-all persistence, WebRTC signaling relay, participant removal, and recent session rejoin.
+
+### Frontend Type Checking (TypeScript)
+```bash
+cd frontend
+npx tsc --noEmit
+```
 
 ---
 
-## 💡 Key Design Decisions
+## 📌 Key Architectural Assumptions
 
-1. **Meeting vs Session Split**:
-   - `meetings` records scheduled/instant metadata, while `meeting_sessions` tracks individual live occurrences.
-   - `meeting_sessions.ended_at IS NULL` is the **single source of truth** for whether a meeting session is currently live.
-2. **Transaction Safety**:
-   - Updates to `meeting_sessions.ended_at` and `meetings.status` are executed within a single database transaction (`db.commit()`), preventing inconsistent intermediate states.
-3. **Derived Invite Links**:
-   - Invite links follow `{FRONTEND_URL}/j/{meeting_code}` and are derived dynamically in the UI rather than stored in the database.
-4. **Soft-State Participant History**:
-   - Every join creates a new row in `participants`, preserving a history of stays per user and tracking accurate join/leave timestamps.
-5. **Rejoin Mechanics**:
-   - Rejoining a live session reuses the display name from the user's previous stay and skips the name prompt.
-   - If the meeting ended in the meantime, the server responds with `409 Conflict`, and the UI notifies the user that the meeting has ended.
-6. **No Auth Assumption**:
-   - `get_current_user` dependency automatically resolves to default seeded User ID 1 (`Sanyog Sethi`). Other users exist in seed data to populate participant history.
+1. **Meeting vs Session Separation**:
+   - `meetings` tracks the scheduled or instant meeting definition (10-digit code, title, schedule).
+   - `meeting_sessions` tracks individual live meeting executions. `ended_at IS NULL` is the single source of truth for an active live meeting session.
+
+2. **Scheduled Meeting Start Rules**:
+   - Non-host participants cannot join a scheduled meeting before it has been started by the host or before its scheduled start time. If the users still attempt to join, the server throws a '400 Bad Request' error specifying the user that "This scheduled meeting has not started yet".
+   - Hosts can start scheduled meetings from the dashboard or by joining, creating the active `meeting_sessions` record and converting the status of meeting to `live`.
+   - Hosts get an option to start the meeting early as well. Starting from 15 minutes before the scheduled time of the meeting, the host gets a Start button under the scheduled meeting through which they can start the meeting earlier if wanted.
+   - Schedule Meeting modal automatically sets the default start time to the next 15-minute time slot relative to current local time (e.g. 5:06 AM -> 5:15 AM).
+
+3. **WebRTC Real-Time Video & Audio Architecture**:
+   - The live streaming funcionality is built with WebRTC `RTCPeerConnection` supporting live multi-party camera video and audio.
+   - Dual signaling engine combines same-browser tab `BroadcastChannel` with backend HTTP signaling relay polling endpoints (`/api/signaling/send` & `/api/signaling/poll`), enabling WebRTC connections across different browser profiles(for testing purposes), incognito windows, and distinct network clients.
+
+4. **Participant Audio & Mute Synchronization**:
+   - Host `Mute All` functionality- mutes participant's mic input and sets `is_muted = 1` in the backend database.
+   - Muted status persists across participant polling ticks. When a participant clicks **Unmute**, their client unmutes in a single click, updating `is_muted = 0` without state-rollback race conditions.
+
+5. **Session Termination & Removal**:
+   - When the host clicks **End Meeting for All**, a `meeting_ended` signal is broadcast via WebRTC signaling relay, closing all connected peer connections, releasing local media hardware, clearing session storage, and redirecting all participants back to the dashboard.
+   - Navigating away from the meeting room page triggers `sendBeacon` / `keepalive` cleanup to set participant status to `left` and enable rejoin under Recent Sessions on the dashboard.
+
+6. **Authentication & Profile Context**:
+   - Implements JWT authentication alongside Bcrypt password hashing.
+   - Includes a dev **Profile Switcher** in the top navigation header to allow instant switching between host and participant personas for multi-user testing in a single browser instance.
+
+7. **Zoom Branding Alignment**:
+   - Uses Zoom signature blue (`#0B5CFF`) avatars with bold uppercase white initials, dark theme design tokens (`#1A1A1A`, `#242424`), fixed Workplace navigation bar, calendar popovers, and interactive three-dots scheduled meeting menus (**Copy Meeting ID** and **Copy Invite Link**).
+

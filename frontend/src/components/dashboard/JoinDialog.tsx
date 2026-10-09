@@ -20,7 +20,20 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({
   onJoin,
 }) => {
   const [meetingInput, setMeetingInput] = useState<string>(initialCode);
-  const [displayName, setDisplayName] = useState<string>("Sanyog Sethi");
+  const [displayName, setDisplayName] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const userStr = localStorage.getItem("zoom_user");
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          if (user?.display_name) return user.display_name;
+        } catch {}
+      }
+      const savedName = localStorage.getItem("zoom_display_name");
+      if (savedName) return savedName;
+    }
+    return "Guest User";
+  });
   const [dontConnectAudio, setDontConnectAudio] = useState<boolean>(false);
   const [turnOffVideo, setTurnOffVideo] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
@@ -33,20 +46,22 @@ export const JoinDialog: React.FC<JoinDialogProps> = ({
   }, [initialCode]);
 
   const rawCode = extractCodeFromInput(meetingInput);
-  const isValid = rawCode.length === 10 && displayName.trim().length > 0;
+  const isValid = rawCode.length >= 5;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValid) return;
+    if (!isValid || loading) return;
 
     setLoading(true);
     setErrorMessage(null);
     try {
-      await onJoin(rawCode, displayName.trim());
-      onClose();
+      const name = displayName.trim() || "Guest User";
+      if (typeof window !== "undefined") {
+        localStorage.setItem("zoom_display_name", name);
+      }
+      await onJoin(rawCode, name);
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to join meeting. Please check the Meeting ID.");
-    } finally {
       setLoading(false);
     }
   };

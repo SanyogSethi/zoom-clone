@@ -13,14 +13,29 @@ export function formatMeetingCode(code: string): string {
  */
 export function extractCodeFromInput(input: string): string {
   if (!input) return "";
-  const trimmed = input.trim();
-  
-  // If invite URL, extract code from last path segment
-  if (trimmed.includes("/j/")) {
-    const parts = trimmed.split("/j/");
-    if (parts.length > 1) {
-      const segment = parts[1].split("?")[0].split("#")[0];
-      return segment.replace(/\D/g, "");
+  let trimmed = input.trim();
+  try {
+    trimmed = decodeURIComponent(trimmed);
+  } catch (e) {}
+
+  // If input is a URL or contains path slashes
+  if (trimmed.includes("/j/") || trimmed.includes("/meeting/") || trimmed.includes("://") || trimmed.includes("/")) {
+    // Strip query parameters and fragment anchors
+    trimmed = trimmed.split("?")[0].split("#")[0];
+    const segments = trimmed.split("/").filter(Boolean);
+    
+    // Check path segments from right to left for a candidate with 8 to 12 digits
+    for (let i = segments.length - 1; i >= 0; i--) {
+      const candidate = segments[i].replace(/\D/g, "");
+      if (candidate.length >= 8 && candidate.length <= 12) {
+        return candidate;
+      }
+    }
+    
+    // Fallback to digits in the last path segment
+    if (segments.length > 0) {
+      const lastDigits = segments[segments.length - 1].replace(/\D/g, "");
+      if (lastDigits.length > 0) return lastDigits;
     }
   }
 

@@ -22,8 +22,8 @@ export function useParticipants(sessionId: number | null) {
 
   useEffect(() => {
     fetchParticipants();
-    // Poll every 3 seconds to keep participant list up to date
-    const interval = setInterval(fetchParticipants, 3000);
+    // Poll every 1.5 seconds to keep participant list up to date
+    const interval = setInterval(fetchParticipants, 1500);
     return () => clearInterval(interval);
   }, [fetchParticipants]);
 

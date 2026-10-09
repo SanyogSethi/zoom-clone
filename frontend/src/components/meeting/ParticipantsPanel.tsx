@@ -9,7 +9,8 @@ import { Participant } from "@/lib/types";
 export interface ParticipantsPanelProps {
   isOpen: boolean;
   participants: Participant[];
-  currentUserId: number;
+  currentParticipantId?: number;
+  currentUserId?: number;
   isHost: boolean;
   onClose: () => void;
   onMuteAll?: () => void;
@@ -20,6 +21,7 @@ export interface ParticipantsPanelProps {
 export const ParticipantsPanel: React.FC<ParticipantsPanelProps> = ({
   isOpen,
   participants,
+  currentParticipantId,
   currentUserId,
   isHost,
   onClose,
@@ -32,7 +34,7 @@ export const ParticipantsPanel: React.FC<ParticipantsPanelProps> = ({
   const active = participants.filter((p) => p.status === "joined");
 
   return (
-    <aside className="w-80 bg-[#1F1F1F] border-l border-neutral-800 flex flex-col h-full animate-slide-in-right select-none z-30">
+    <aside className="w-full sm:w-80 bg-[#1F1F1F] border-l border-neutral-800 flex flex-col h-full animate-slide-in-right select-none z-30">
       {/* Drawer Header */}
       <div className="h-14 px-4 border-b border-neutral-800 flex items-center justify-between">
         <h3 className="font-bold text-sm text-white">
@@ -49,7 +51,9 @@ export const ParticipantsPanel: React.FC<ParticipantsPanelProps> = ({
       {/* Participant List */}
       <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-1">
         {active.map((p) => {
-          const isMe = p.user_id === currentUserId;
+          const isMe = currentParticipantId
+            ? p.id === currentParticipantId
+            : p.user_id === currentUserId;
           const isParticipantHost = p.role === "host";
 
           return (

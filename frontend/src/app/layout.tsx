@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
+import { Sidebar } from "@/components/layout/Sidebar";
 
 export const metadata: Metadata = {
   title: "zoom-clone-scalerAI-assessment",
@@ -14,11 +15,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
-      <body className="bg-[#1C1C1C] text-zoom-text-primary h-full flex flex-col overflow-hidden">
+      <body className="bg-[#18181A] text-white h-full flex flex-col overflow-hidden">
         <Navbar />
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
-          {children}
-        </main>
+        <div className="flex-1 flex min-h-0 overflow-hidden relative">
+          <Sidebar />
+          <main className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );

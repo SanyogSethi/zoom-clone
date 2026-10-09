@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import users_router, meetings_router, sessions_router
+from app.routers import users_router, meetings_router, sessions_router, auth_router
 from scripts.seed import seed_data
 
 @asynccontextmanager
@@ -37,6 +37,7 @@ app.add_middleware(
 )
 
 # Include API routers
+app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(meetings_router)
 app.include_router(sessions_router)

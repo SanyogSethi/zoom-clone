@@ -118,54 +118,6 @@ erDiagram
     }
 ```
 
-### Database Schema (DBML Format for [dbdiagram.io](https://dbdiagram.io))
-
-```dbml
-// Zoom Clone Database Schema
-
-Table users {
-  id integer [pk, increment]
-  email varchar [unique, not null]
-  password_hash text [note: 'Bcrypt hashed password']
-  display_name varchar [not null]
-  avatar_url text
-  timezone varchar [default: 'UTC']
-  created_at varchar [not null, note: 'ISO-8601 UTC']
-}
-
-Table meetings {
-  id integer [pk, increment]
-  host_id integer [not null, ref: > users.id]
-  meeting_code varchar [unique, not null, note: '10-digit unique code']
-  title varchar [not null]
-  description text
-  type varchar [not null, note: 'instant or scheduled']
-  scheduled_start varchar [note: 'ISO-8601 UTC start time']
-  duration_minutes integer
-  status varchar [not null, default: 'scheduled', note: 'scheduled, live, or ended']
-  created_at varchar [not null]
-}
-
-Table meeting_sessions {
-  id integer [pk, increment]
-  meeting_id integer [not null, ref: > meetings.id]
-  started_at varchar [not null]
-  ended_at varchar [note: 'NULL indicates live active session']
-}
-
-Table participants {
-  id integer [pk, increment]
-  session_id integer [not null, ref: > meeting_sessions.id]
-  user_id integer [not null, ref: > users.id]
-  display_name varchar [not null]
-  role varchar [not null, note: 'host or participant']
-  status varchar [not null, note: 'joined, left, or removed']
-  is_muted integer [default: 0, note: '0 = unmuted, 1 = muted by host']
-  joined_at varchar [not null]
-  left_at varchar
-}
-```
-
 ---
 
 ## 💻 Setup & Local Execution

@@ -7,7 +7,9 @@ import {
   Participant,
 } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const rawApiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const cleanApiBase = rawApiBase.trim().replace(/\/+$/, "");
+const API_BASE = cleanApiBase.endsWith("/api") ? cleanApiBase : `${cleanApiBase}/api`;
 
 export class ApiError extends Error {
   status: number;

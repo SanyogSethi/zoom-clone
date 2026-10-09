@@ -21,7 +21,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS restricted to configured FRONTEND_URL
+# Configure CORS to allow configured FRONTEND_URL, Vercel deployments, and localhost
 origins = [
     settings.FRONTEND_URL,
     "http://localhost:3000",
@@ -30,7 +30,8 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=origins if settings.FRONTEND_URL != "*" else ["*"],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

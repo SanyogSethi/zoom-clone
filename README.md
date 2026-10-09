@@ -67,54 +67,55 @@ zoom-clone-scalerAI-assessment/
 
 ---
 
-## 📊 Entity Relationship Diagram (ERD)
+## 📊 Entity Relationship Diagram (ERD & Database Schema)
 
 ```mermaid
 erDiagram
-    USERS ||--o{ MEETINGS : hosts
-    MEETINGS ||--o{ MEETING_SESSIONS : has
-    MEETING_SESSIONS ||--o{ PARTICIPANTS : contains
-    USERS ||--o{ PARTICIPANTS : joins
+    users ||--o{ meetings : "hosts (1:N)"
+    meetings ||--o{ meeting_sessions : "has (1:N)"
+    meeting_sessions ||--o{ participants : "contains (1:N)"
+    users ||--o{ participants : "joins (1:N)"
 
-    USERS {
-        int id PK
-        string email UK
-        string display_name
-        string avatar_url
-        string timezone
-        string created_at
+    users {
+        int id PK "autoincrement"
+        string email UK "NOT NULL"
+        string password_hash "Bcrypt hashed password"
+        string display_name "NOT NULL"
+        string avatar_url "Nullable"
+        string timezone "DEFAULT 'UTC'"
+        string created_at "ISO-8601 UTC"
     }
 
-    MEETINGS {
-        int id PK
-        int host_id FK
-        string meeting_code UK
-        string title
-        string description
-        string type "instant | scheduled"
-        string scheduled_start
-        int duration_minutes
-        string status "scheduled | live | ended"
-        string created_at
+    meetings {
+        int id PK "autoincrement"
+        int host_id FK "users.id"
+        string meeting_code UK "10-digit unique code"
+        string title "NOT NULL"
+        string description "Nullable"
+        string type "'instant' | 'scheduled'"
+        string scheduled_start "ISO-8601 UTC start time"
+        int duration_minutes "Positive integer"
+        string status "'scheduled' | 'live' | 'ended'"
+        string created_at "ISO-8601 UTC"
     }
 
-    MEETING_SESSIONS {
-        int id PK
-        int meeting_id FK
-        string started_at
+    meeting_sessions {
+        int id PK "autoincrement"
+        int meeting_id FK "meetings.id"
+        string started_at "NOT NULL"
         string ended_at "Source of truth for live (NULL)"
     }
 
-    PARTICIPANTS {
-        int id PK
-        int session_id FK
-        int user_id FK
-        string display_name
-        string role "host | participant"
-        string status "joined | left | removed"
-        int is_muted
-        string joined_at
-        string left_at
+    participants {
+        int id PK "autoincrement"
+        int session_id FK "meeting_sessions.id"
+        int user_id FK "users.id"
+        string display_name "NOT NULL"
+        string role "'host' | 'participant'"
+        string status "'joined' | 'left' | 'removed'"
+        int is_muted "0 = unmuted, 1 = muted by host"
+        string joined_at "ISO-8601 UTC"
+        string left_at "Nullable"
     }
 ```
 

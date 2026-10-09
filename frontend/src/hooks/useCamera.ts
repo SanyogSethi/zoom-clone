@@ -29,46 +29,47 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
     setIsSpeaking(false);
   }, []);
 
-  // Request camera and microphone access only when enabled is true
   const initCamera = useCallback(async () => {
     if (!enabled) return;
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      setHasPermission(false);
+      return;
+    }
+
+    let mediaStream: MediaStream | null = null;
+
     try {
-      let mediaStream: MediaStream;
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: true,
+      });
+    } catch {
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
+          video: true,
+          audio: true,
         });
       } catch {
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-        });
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        } catch {
+          try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          } catch (err) {
+            console.warn("All media access denied or unavailable:", err);
+            setHasPermission(false);
+            return;
+          }
+        }
       }
+    }
+
+    if (mediaStream) {
       streamRef.current = mediaStream;
       setStream(mediaStream);
       setHasPermission(true);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-      }
-    } catch (err) {
-      console.warn("Camera/Microphone access denied or unavailable:", err);
-      try {
-        const audioOnlyStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        streamRef.current = audioOnlyStream;
-        setStream(audioOnlyStream);
-        setHasPermission(true);
-      } catch (audioErr) {
-        console.warn("Audio-only access also denied or unavailable:", audioErr);
-        setHasPermission(false);
       }
     }
   }, [enabled]);

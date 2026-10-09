@@ -145,10 +145,28 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
   }, [stream]);
 
   // Toggle Mute: enable/disable audio tracks so WebRTC audio flows seamlessly upon unmuting
-  const toggleMute = useCallback(() => {
-    if (!streamRef.current) return;
+  const toggleMute = useCallback(async () => {
+    if (!streamRef.current) {
+      await initCamera();
+      return;
+    }
 
     const audioTracks = streamRef.current.getAudioTracks();
+    if (audioTracks.length === 0) {
+      try {
+        const newAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const newTrack = newAudioStream.getAudioTracks()[0];
+        if (newTrack) {
+          streamRef.current.addTrack(newTrack);
+          setIsMuted(false);
+          setStream(new MediaStream(streamRef.current.getTracks()));
+        }
+      } catch (err) {
+        console.warn("Failed to acquire microphone track on click:", err);
+      }
+      return;
+    }
+
     if (isMuted) {
       audioTracks.forEach((track) => {
         track.enabled = true;
@@ -161,13 +179,31 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
       setIsMuted(true);
       setIsSpeaking(false);
     }
-  }, [isMuted]);
+  }, [isMuted, initCamera]);
 
   // Toggle Video: enable/disable video tracks so WebRTC video flows seamlessly upon resuming
-  const toggleVideo = useCallback(() => {
-    if (!streamRef.current) return;
+  const toggleVideo = useCallback(async () => {
+    if (!streamRef.current) {
+      await initCamera();
+      return;
+    }
 
     const videoTracks = streamRef.current.getVideoTracks();
+    if (videoTracks.length === 0) {
+      try {
+        const newVideoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const newTrack = newVideoStream.getVideoTracks()[0];
+        if (newTrack) {
+          streamRef.current.addTrack(newTrack);
+          setIsVideoOff(false);
+          setStream(new MediaStream(streamRef.current.getTracks()));
+        }
+      } catch (err) {
+        console.warn("Failed to acquire camera track on click:", err);
+      }
+      return;
+    }
+
     if (isVideoOff) {
       videoTracks.forEach((track) => {
         track.enabled = true;
@@ -179,7 +215,7 @@ export function useCamera(options: UseCameraOptions = { enabled: true }) {
       });
       setIsVideoOff(true);
     }
-  }, [isVideoOff]);
+  }, [isVideoOff, initCamera]);
 
   // Force Mute: disable audio tracks for host mute actions
   const forceMute = useCallback(() => {

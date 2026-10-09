@@ -32,7 +32,25 @@ export const VideoTile: React.FC<VideoTileProps> = ({
   onPin,
   isCompact = false,
 }) => {
-  const isCameraActive = isSelf && !isVideoOff && (videoRef || selfStream);
+  const internalVideoRef = React.useRef<HTMLVideoElement | null>(null);
+
+  React.useEffect(() => {
+    const el = isSelf ? (videoRef?.current || internalVideoRef.current) : internalVideoRef.current;
+    const activeStream = isSelf ? selfStream : remoteStream;
+
+    if (el && activeStream) {
+      if (el.srcObject !== activeStream) {
+        el.srcObject = activeStream;
+      }
+      el.play().catch(() => {});
+    }
+  }, [isSelf, selfStream, remoteStream, videoRef]);
+
+  const hasVideoTrack = isSelf
+    ? Boolean(selfStream && selfStream.getVideoTracks().length > 0 && selfStream.getVideoTracks().some(t => t.enabled))
+    : Boolean(remoteStream && remoteStream.getVideoTracks().length > 0 && remoteStream.getVideoTracks().some(t => t.enabled));
+
+  const isVideoVisible = !isVideoOff && hasVideoTrack;
 
   return (
     <div
@@ -45,22 +63,19 @@ export const VideoTile: React.FC<VideoTileProps> = ({
       }`}
     >
       {/* Real Camera Stream for Self */}
-      {isSelf && (videoRef || selfStream) && (
+      {isSelf && (
         <video
           ref={(el) => {
+            internalVideoRef.current = el;
             if (videoRef) {
               (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el;
-            }
-            if (el && selfStream && el.srcObject !== selfStream) {
-              el.srcObject = selfStream;
-              el.play().catch(() => {});
             }
           }}
           autoPlay
           playsInline
           muted
           className={`w-full h-full object-cover transform -scale-x-100 max-h-full ${
-            isCameraActive ? "block" : "hidden"
+            isVideoVisible ? "block" : "hidden"
           }`}
         />
       )}
@@ -69,23 +84,18 @@ export const VideoTile: React.FC<VideoTileProps> = ({
       {!isSelf && remoteStream && (
         <video
           ref={(el) => {
-            if (el) {
-              if (el.srcObject !== remoteStream) {
-                el.srcObject = remoteStream;
-              }
-              el.play().catch(() => {});
-            }
+            internalVideoRef.current = el;
           }}
           autoPlay
           playsInline
           className={`w-full h-full object-cover max-h-full ${
-            !isVideoOff ? "block" : "opacity-0 absolute inset-0 pointer-events-none"
+            isVideoVisible ? "block" : "opacity-0 absolute inset-0 pointer-events-none"
           }`}
         />
       )}
 
       {/* Initials Avatar fallback when video is off or stream unavailable */}
-      {((isSelf && (isVideoOff || !videoRef)) || (!isSelf && (isVideoOff || !remoteStream))) && (
+      {!isVideoVisible && (
         <div className="flex flex-col items-center justify-center gap-2 select-none p-2">
           <Avatar name={participant.display_name} size={isCompact ? "md" : "xl"} />
         </div>
